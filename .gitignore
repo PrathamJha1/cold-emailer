@@ -1,0 +1,6 @@
+app/.wwebjs_auth
+app/node_modules
+app/assets
+app/.env
+app/.gitignore
+app/outreach.html
