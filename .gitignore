@@ -4,3 +4,4 @@ app/assets
 app/.env
 app/.gitignore
 app/outreach.html
+app/package-lock.json
