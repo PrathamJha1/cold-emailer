@@ -23,7 +23,7 @@ console.log(
   "Mode:",
   TEST_MODE
     ? "🧪 TEST / PREVIEW MODE (Console output only, no emails sent)"
-    : "🚀 PRODUCTION (Emails dispatched via Gmail)",
+    : "🚀 PRODUCTION (Emails dispatched via Gmail)"
 );
 console.log("Sender Account:", EMAIL_USER || "Missing in .env");
 console.log(`Ollama Engine: ${OLLAMA_HOST} [Model: ${OLLAMA_MODEL}]`);
@@ -31,31 +31,31 @@ console.log("===============================================\n");
 
 // Detailed Resume Context & Metrics Extracted from Pratham_s_Resume_YOE_3.pdf
 const resumeInsights = `
-Candidate Profile: Pratham Jha[cite: 1]
+Candidate Profile: Pratham Jha
 Target Opportunities: SDE 1 / SDE 2 (Frontend, Backend, or Full Stack roles)
-Experience: ~3 Years of Software Engineering Experience[cite: 1]
+Experience: ~3 Years of Software Engineering Experience
 
 Core Technical Stack:
-- Primary / Frontend: React, JavaScript (ES6+), TypeScript, Next.js, Tailwind CSS, Bootstrap, Material-UI, Shadcn[cite: 1]
-- Backend & Architecture: Node.js, Express.js, RESTful APIs, Spring Boot, Microservices Architecture[cite: 1]
-- Databases & Cloud: PostgreSQL, MongoDB, MySQL, Supabase, Firebase, AWS, Docker, CI/CD[cite: 1]
+- Primary / Frontend: React, JavaScript (ES6+), TypeScript, Next.js, Tailwind CSS, Bootstrap, Material-UI, Shadcn
+- Backend & Architecture: Node.js, Express.js, RESTful APIs, Spring Boot, Microservices Architecture
+- Databases & Cloud: PostgreSQL, MongoDB, MySQL, Supabase, Firebase, AWS, Docker, CI/CD
 
 Work Experience & High-Impact Metrics:
 1. SDE-I at VERTO (Pune):
-   - Engineered scalable RESTful backend APIs and automated payment workflows/pricing engines (OAS 3.0 standard)[cite: 1].
-   - Built automated refund and archival pipelines reducing manual effort and generating secure audit logs[cite: 1].
-   - Expanded trading blotters with multi-currency handling for financial reconciliation and accurate P&L tracking[cite: 1].
+   - Engineered scalable RESTful backend APIs and automated payment workflows/pricing engines (OAS 3.0 standard).
+   - Built automated refund and archival pipelines reducing manual effort and generating secure audit logs.
+   - Expanded trading blotters with multi-currency handling for financial reconciliation and accurate P&L tracking.
 
 2. Software Engineer at SHARDEUM (Remote):
-   - Architected enterprise backend tracking 500+ validator nodes, boosting network stability by 40%[cite: 1].
-   - Built Node.js load-testing infrastructure simulating 100 TPS across 15+ scripts[cite: 1].
-   - Designed a Multisig-App backend to adjust live network parameters, cutting update turnaround by 50%[cite: 1].
+   - Architected enterprise backend tracking 500+ validator nodes, boosting network stability by 40%.
+   - Built Node.js load-testing infrastructure simulating 100 TPS across 15+ scripts.
+   - Designed a Multisig-App backend to adjust live network parameters, cutting update turnaround by 50%.
 
 Key Projects & Highlights:
-- Real-Time Chat App: Built with React, Node.js, and Socket.IO supporting 10+ rooms with 200ms latency and 99.5% delivery rate[cite: 1].
-- Music Streaming App: Built responsive frontend with React and Spotify API, decreasing user search time by 60%[cite: 1].
-- Price Tracker: Built with Next.js/Node.js, Supabase, and Firecrawl AI for multi-platform price extraction and fuzzy matching[cite: 1].
-- Problem Solving: LeetCode Knight (Peak Rating: 1873, 1200+ problems solved, 39 contests)[cite: 1].
+- Real-Time Chat App: Built with React, Node.js, and Socket.IO supporting 10+ rooms with 200ms latency and 99.5% delivery rate.
+- Music Streaming App: Built responsive frontend with React and Spotify API, decreasing user search time by 60%.
+- Price Tracker: Built with Next.js/Node.js, Supabase, and Firecrawl AI for multi-platform price extraction and fuzzy matching.
+- Problem Solving: LeetCode Knight (Peak Rating: 1873, 1200+ problems solved, 39 contests).
 `;
 
 // Helper: Formulate clean recruiter greeting
@@ -75,23 +75,42 @@ function formatGreeting(contact) {
   return `Hi ${firstName},`;
 }
 
-// Helper: Determine target role subject tag based on context
-function resolveTargetRole(context = "") {
-  const normalized = context.toLowerCase();
-  if (
-    normalized.includes("sde2") ||
-    normalized.includes("sde 2") ||
-    normalized.includes("sde-2")
-  ) {
+// Helper: Determine target role from explicit CSV Role column or Context
+function resolveTargetRole(context = "", csvRole = "") {
+  if (csvRole && csvRole.trim()) {
+    return csvRole.trim();
+  }
+
+  const normalized = (context || "").toLowerCase().trim();
+
+  if (normalized.includes("sde2") || normalized.includes("sde 2") || normalized.includes("sde-2")) {
     return "SDE 2 Opportunities";
   }
-  if (
-    normalized.includes("sde1") ||
-    normalized.includes("sde 1") ||
-    normalized.includes("sde-1")
-  ) {
+  if (normalized.includes("sde1") || normalized.includes("sde 1") || normalized.includes("sde-1")) {
     return "SDE 1 Opportunities";
   }
+  if (normalized.includes("sr. frontend") || normalized.includes("senior frontend")) {
+    return "Senior Frontend Engineer";
+  }
+  if (normalized.includes("frontend")) {
+    return "Frontend Engineer";
+  }
+  if (normalized.includes("full-stack") || normalized.includes("full stack")) {
+    return "Full-Stack Developer";
+  }
+  if (normalized.includes("backend")) {
+    return "Backend Developer";
+  }
+  if (normalized.includes("microservices")) {
+    return "Microservices Engineer";
+  }
+  if (normalized.includes("software developer")) {
+    return "Software Developer";
+  }
+  if (normalized.includes("software engineer") || normalized.includes("swe")) {
+    return "Software Engineer";
+  }
+
   return "SDE 1 / SDE 2 Roles";
 }
 
@@ -102,32 +121,33 @@ function sanitizeEmailBody(rawText) {
     .replace(/```$/gim, "")
     .replace(
       /^(here (?:is|are|'s)[^\n]*:?|certainly[^\n]*|sure[^\n]*|subject:[^\n]*|dear[^\n]*|hi[^\n]*|hello[^\n]*)\n*/gim,
-      "",
+      ""
     )
     .replace(/\n+(best regards|sincerely|cheers|thanks|regards)[^\n]*/gim, "")
     .replace(
       /\[(?:Your Name|Company Name|Recruiter Name|Target Role|Role)\]/gi,
-      "",
+      ""
     )
     .trim();
 }
 
 // --- 2. Ollama AI Email Generation ---
-async function generateAIEmail({ company, contact, context }) {
-  const targetRole = resolveTargetRole(context);
-
+async function generateAIEmail({ company, contact, context, targetRole, subject }) {
   const prompt = `You are Pratham Jha writing a direct, high-impact cold email to ${contact} at ${company}.
 
 Resume Data & Insights:
 ${resumeInsights}
 
-Target Opening Context: ${context} (Focus: ${targetRole})
+Target Role: ${targetRole}
+Target Company: ${company}
+Target Context: ${context}
 
 Instructions:
-Write 1-2 concise body paragraphs applying for ${targetRole} at ${company}.
+Write 1-2 concise body paragraphs applying for the ${targetRole} position at ${company}.
+- MANDATORY: Explicitly mention BOTH the company name ("${company}") and the target role ("${targetRole}") in the body text.
 - ALWAYS write in the FIRST PERSON ("I", "my", "me"). NEVER refer to yourself in the third person.
 - Highlight your core strengths in React and JavaScript/TypeScript upfront, along with backend achievements at VERTO (scalable payment APIs/microservices) and SHARDEUM (distributed systems tracking 500+ nodes).
-- Explicitly state that you have attached your resume for detailed metrics, and ask if their engineering team has open SDE 1 or SDE 2 positions.
+- Explicitly state that you have attached your resume for detailed metrics, and ask if their engineering team is open to discussing this opportunity.
 
 STRICT CONSTRAINTS:
 - Output ONLY the body paragraphs.
@@ -144,7 +164,7 @@ STRICT CONSTRAINTS:
         model: OLLAMA_MODEL,
         prompt: prompt,
         system:
-          "You are a concise cold email generator representing Pratham Jha. Output only the email body in the first person. Emphasize React, JavaScript, and scalable microservices metrics. Never include conversational filler.",
+          `You are a concise cold email generator representing Pratham Jha. Output only the email body in the first person. You must explicitly name both "${company}" and "${targetRole}" in the body. Emphasize React, JavaScript, and scalable microservices metrics. Never include conversational filler.`,
         stream: false,
         options: {
           temperature: 0.6,
@@ -160,9 +180,9 @@ STRICT CONSTRAINTS:
     bodyText = data.response || "";
   } catch (error) {
     console.warn(
-      `⚠️ Ollama Generation failed for ${company} (${error.message}). Using fallback template.`,
+      `⚠️ Ollama Generation failed for ${company} (${error.message}). Using fallback template.`
     );
-    bodyText = `I am reaching out to explore ${targetRole} engineering opportunities at ${company}. With ~3 years of experience specializing in React, JavaScript, TypeScript, and high-performance Node.js microservices, I have built mission-critical payment workflows at VERTO and scaled distributed backend systems for 500+ nodes at SHARDEUM. I have attached my resume for your review and would love to discuss how my skill set aligns with open SDE 1 or SDE 2 roles on your team.`;
+    bodyText = `I am writing to explore ${targetRole} opportunities at ${company}. With ~3 years of software engineering experience specializing in React, JavaScript, TypeScript, and high-performance Node.js microservices, I have built mission-critical payment workflows at VERTO and scaled distributed backend systems for 500+ nodes at SHARDEUM. I have attached my resume for your review and would love to discuss how my skill set aligns with open ${targetRole} positions on your team at ${company}.`;
   }
 
   const cleanedBody = sanitizeEmailBody(bodyText);
@@ -172,7 +192,7 @@ STRICT CONSTRAINTS:
   const finalEmailBody = `${greeting}\n\n${cleanedBody}\n\n${mySignature}`;
 
   return {
-    subject: `Application: ${targetRole} - Pratham Jha`,
+    subject: subject,
     text: finalEmailBody,
   };
 }
@@ -193,37 +213,47 @@ const processEmailsCSV = (filePath) => {
         const company = (row.Company || row.company || "your team").trim();
         const contact = (row.Contact || row.contact || "Hiring Team").trim();
         const email = (row.Email || row.email || "").trim();
-        const context = (row.Context || row.context || "SDE 1 / SDE 2").trim();
+        const csvRole = (row.Role || row.role || "").trim();
+        const context = (row.Context || row.context || "").trim();
 
         if (!email || email.includes("relay address") || !email.includes("@")) {
           console.log(
-            `⏭️  Skipping invalid/relay row: ${company} (${contact})`,
+            `⏭️  Skipping invalid/relay row: ${company} (${contact})`
           );
           continue;
         }
 
+        // 1. Resolve role from CSV Role column, else context, else default
+        const targetRole = resolveTargetRole(context, csvRole);
+
+        // 2. Set Subject: CSV role value if present, else default format
+        const defaultSubject = `Application: ${targetRole} - Pratham Jha`;
+        const subject = csvRole ? csvRole : defaultSubject;
+
         try {
-          const { subject, text } = await generateAIEmail({
+          const { subject: finalSubject, text } = await generateAIEmail({
             company,
             contact,
             context,
+            targetRole,
+            subject,
           });
 
           if (TEST_MODE) {
             // Preview Generated Email in Terminal
             console.log(
-              `====================== [PREVIEW #${counter}] ======================`,
+              `====================== [PREVIEW #${counter}] ======================`
             );
             console.log(`To:       ${contact} <${email}>`);
             console.log(`Company:  ${company}`);
-            console.log(`Context:  ${context}`);
-            console.log(`Subject:  ${subject}`);
+            console.log(`Role:     ${targetRole}`);
+            console.log(`Subject:  ${finalSubject}`);
             console.log(
-              "----------------------- EMAIL BODY -----------------------",
+              "----------------------- EMAIL BODY -----------------------"
             );
             console.log(text);
             console.log(
-              "==========================================================\n",
+              "==========================================================\n"
             );
             counter++;
           } else {
@@ -233,7 +263,7 @@ const processEmailsCSV = (filePath) => {
             const mailOptions = {
               from: EMAIL_USER,
               to: email,
-              subject: subject,
+              subject: finalSubject,
               text: text,
             };
 
@@ -256,13 +286,13 @@ const processEmailsCSV = (filePath) => {
         } catch (error) {
           console.error(
             `❌ Error processing entry for ${email}:`,
-            error.message,
+            error.message
           );
         }
       }
 
       console.log(
-        `🎉 Finished run. Mode was: ${TEST_MODE ? "TEST PREVIEW" : "LIVE SEND"}`,
+        `🎉 Finished run. Mode was: ${TEST_MODE ? "TEST PREVIEW" : "LIVE SEND"}`
       );
     });
 };
